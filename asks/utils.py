@@ -4,16 +4,16 @@ __all__ = ['get_netloc_port', 'requote_uri', 'timeout_manager']
 from urllib.parse import  quote
 from functools import wraps
 
-from anyio import fail_after
+from curio import timeout_after, TaskTimeout
 
 from .errors import RequestTimeout
 
 
 async def timeout_manager(timeout, coro, *args):
     try:
-        async with fail_after(timeout):
+        async with timeout_after(timeout):
             return await coro(*args)
-    except TimeoutError as e:
+    except TaskTimeout as e:
         raise RequestTimeout from e
 
 

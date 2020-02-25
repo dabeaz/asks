@@ -16,7 +16,7 @@ from random import randint
 import mimetypes
 import re
 
-from anyio import aopen
+from curio.file import aopen
 import h11
 
 from .utils import requote_uri
@@ -601,7 +601,7 @@ class RequestProcessor:
         while True:
             event = h11_connection.next_event()
             if event is h11.NEED_DATA:
-                h11_connection.receive_data(await self.sock.receive_some(10000))
+                h11_connection.receive_data(await self.sock.recv(10000))
                 continue
             return event
 
@@ -614,10 +614,10 @@ class RequestProcessor:
             package (list of str): The header package.
             body (str): The str representation of the body.
         '''
-        await self.sock.send_all(h11_connection.send(request_bytes))
+        await self.sock.sendall(h11_connection.send(request_bytes))
         if body_bytes is not None:
-            await self.sock.send_all(h11_connection.send(body_bytes))
-        await self.sock.send_all(h11_connection.send(h11.EndOfMessage()))
+            await self.sock.sendall(h11_connection.send(body_bytes))
+        await self.sock.sendall(h11_connection.send(h11.EndOfMessage()))
 
     async def _auth_handler_pre(self):
         '''

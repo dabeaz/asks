@@ -9,7 +9,7 @@ from urllib.parse import urlparse, urlunparse
 import ssl
 
 from h11 import RemoteProtocolError
-from anyio import connect_tcp, create_semaphore
+from curio import open_connection, Semaphore
 
 from .cookie_utils import CookieTracker
 from .errors import BadHttpResponse
@@ -60,8 +60,8 @@ class BaseSession(metaclass=ABCMeta):
             location (tuple(str, int)): A tuple of net location (eg
                 '127.0.0.1' or 'example.org') and port (eg 80 or 25000).
         """
-        sock = await connect_tcp(
-            location[0], location[1], bind_host=self.source_address
+        sock = await open_connection(
+            location[0], location[1], source_addr=self.source_address
         )
         sock._active = True
         return sock
@@ -73,13 +73,11 @@ class BaseSession(metaclass=ABCMeta):
             location (tuple(str, int)): A tuple of net location (eg
                 '127.0.0.1' or 'example.org') and port (eg 80 or 25000).
         """
-        sock = await connect_tcp(
+        sock = await open_connection(
             location[0],
             location[1],
-            ssl_context=self.ssl_context,
-            bind_host=self.source_address,
-            autostart_tls=True,
-            tls_standard_compatible=False,
+            ssl=self.ssl_context if self.ssl_context else True,
+            source_addr=self.source_address
         )
         sock._active = True
         return sock
@@ -356,7 +354,7 @@ class Session(BaseSession):
     @property
     def sema(self):
         if self._sema is None:
-            self._sema = create_semaphore(self._connections)
+            self._sema = Semaphore(self._connections)
         return self._sema
 
     def _checkout_connection(self, host_loc):

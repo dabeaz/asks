@@ -2,7 +2,6 @@ import codecs
 from types import SimpleNamespace
 import json as _json
 
-from async_generator import async_generator, yield_
 import h11
 
 from .http_utils import decompress, parse_content_encoding
@@ -138,7 +137,6 @@ class StreamBody:
         self.timeout = None
         self.read_size = 10000
 
-    @async_generator
     async def __aiter__(self):
         if self.content_encoding is not None:
             decompressor = decompress(parse_content_encoding(self.content_encoding))
@@ -148,7 +146,7 @@ class StreamBody:
                 if self.content_encoding is not None:
                     if self.decompress_data:
                         event.data = decompressor.send(event.data)
-                await yield_(event.data)
+                yield event.data
             elif isinstance(event, h11.EndOfMessage):
                 break
 

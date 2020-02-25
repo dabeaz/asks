@@ -5,8 +5,6 @@ from os import path
 from functools import partial
 
 import pytest
-
-from anyio import create_task_group
 import curio
 
 from overly import (
@@ -430,7 +428,7 @@ async def test_session_smallpool(server):
         assert r.status_code == 200
 
     s = asks.Session(server.http_test_url, connections=2)
-    async with create_task_group() as g:
+    async with curio.TaskGroup() as g:
         for _ in range(10):
             await g.spawn(worker, s)
 
